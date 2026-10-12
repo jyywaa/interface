@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pembayaran</title>
+    <!-- Menggunakan Tailwind CSS CDN untuk styling yang cepat dan responsif -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col items-center py-8 px-4">
+
+    <div class="w-full max-w-md space-y-6">
+        <!-- Header Aplikasi -->
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-4 h-4 bg-emerald-700 rounded-sm"></span>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900">Sistem Pembayaran</h1>
+            </div>
+            <p class="text-sm text-slate-600">Pilih metode pembayaran dan isi data yang diperlukan.</p>
+        </div>
+
+        <!-- Card Form Pembayaran -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5">
+            <h2 class="text-xl font-bold text-slate-900">Form Pembayaran</h2>
+
+            <!-- Metode Pembayaran -->
+            <div class="space-y-2">
+                <label for="metode" class="block text-sm font-semibold text-slate-900">Metode Pembayaran</label>
+                <select id="metode" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all cursor-pointer">
+                    <option value="" disabled selected>-- Pilih Metode --</option>
+                    <option value="Transfer Bank">Transfer Bank (Admin 0%)</option>
+                    <option value="QRIS">QRIS (Admin 0,7%)</option>
+                    <option value="Kartu Kredit">Kartu Kredit (Admin 2,5%)</option>
+                </select>
+            </div>
+
+            <!-- Informasi Panduan -->
+            <div class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-4 flex gap-3 text-emerald-800 text-xs sm:text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p>Pilih metode pembayaran sesuai keinginan. Setiap metode memiliki biaya admin berbeda.</p>
+            </div>
+
+            <!-- Dinamis Input Nomor Rekening / ID (Muncul jika metode dipilih) -->
+            <div id="dynamic-field-container" class="space-y-2 hidden">
+                <label id="dynamic-label" for="nomor_rekening" class="block text-sm font-semibold text-slate-900">Nomor Rekening / Tujuan</label>
+                <input type="text" id="nomor_rekening" placeholder="Masukkan nomor rekening atau ID" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all">
+            </div>
+
+            <!-- Jumlah Pembayaran -->
+            <div class="space-y-2">
+                <label for="jumlah" class="block text-sm font-semibold text-slate-900">Jumlah Pembayaran (Rp)</label>
+                <input type="number" id="jumlah" placeholder="Contoh: 500000" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all">
+            </div>
+
+            <!-- Keterangan Pembayaran -->
+            <div class="space-y-2">
+                <label for="keterangan" class="block text-sm font-semibold text-slate-900">Keterangan Pembayaran</label>
+                <input type="text" id="keterangan" placeholder="Contoh: Pembelian barang" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all">
+            </div>
+
+            <!-- Tombol Proses -->
+            <button id="btn-proses" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold py-3.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <span class="inline-block w-2.5 h-2.5 bg-white rounded-xs"></span>
+                <span>Proses Pembayaran</span>
+            </button>
+        </div>
+
+        <!-- Card Detail / Hasil Pembayaran (Awalnya instruksi kosong atau tersembunyi sesuai logika) -->
+        <div id="detail-card" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5">
+            <h2 class="text-xl font-bold text-slate-900">Detail Pembayaran</h2>
+            <div id="detail-content">
+                <p class="text-sm text-slate-500">Isi formulir, lalu tekan Proses Pembayaran. Hasil akan muncul di sini.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logika Interaktif -->
+    <script>
+        const metodeSelect = document.getElementById('metode');
+        const dynamicContainer = document.getElementById('dynamic-field-container');
+        const dynamicLabel = document.getElementById('dynamic-label');
+        const dynamicInput = document.getElementById('nomor_rekening');
+        const btnProses = document.getElementById('btn-proses');
+        const detailContent = document.getElementById('detail-content');
+
+        // Menyesuaikan label input tambahan berdasarkan metode yang dipilih
+        metodeSelect.addEventListener('change', function() {
+            const val = this.value;
+            dynamicContainer.classList.remove('hidden');
+            if (val === 'Transfer Bank') {
+                dynamicLabel.textContent = 'Nomor Rekening Tujuan';
+                dynamicInput.placeholder = 'Contoh: 1234567890 (BCA/Mandiri)';
+            } else if (val === 'QRIS') {
+                dynamicLabel.textContent = 'ID Merchant / Referensi QRIS';
+                dynamicInput.placeholder = 'Contoh: MERCHANT-001';
+            } else if (val === 'Kartu Kredit') {
+                dynamicLabel.textContent = 'Nomor Kartu Kredit';
+                dynamicInput.placeholder = 'Contoh: 4111 2222 3333 4444';
+            }
+        });
+
+        // Format angka ke format mata uang Rupiah
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
+        }
+
+        // Aksi ketika tombol proses pembayaran diklik
+        btnProses.addEventListener('click', function() {
+            const metode = metodeSelect.value;
+            const noRek = dynamicInput.value.trim();
+            const jumlahVal = document.getElementById('jumlah').value;
+            const keteranganVal = document.getElementById('keterangan').value.trim();
+
+            // Validasi sederhana agar tidak error/stuck kosong
+            if (!metode) {
+                alert('Silakan pilih metode pembayaran terlebih dahulu!');
+                metodeSelect.focus();
+                return;
+            }
+            if (!noRek) {
+                alert('Silakan isi kolom Nomor Rekening / Tujuan terlebih dahulu!');
+                dynamicInput.focus();
+                return;
+            }
+            if (!jumlahVal || jumlahVal <= 0) {
+                alert('Silakan masukkan jumlah pembayaran yang valid!');
+                document.getElementById('jumlah').focus();
+                return;
+            }
+            if (!keteranganVal) {
+                alert('Silakan isi keterangan pembayaran!');
+                document.getElementById('keterangan').focus();
+                return;
+            }
+
+            // Perhitungan biaya admin berdasarkan metode
+            let adminFeePercent = 0;
+            if (metode === 'QRIS') adminFeePercent = 0.007; // 0.7%
+            else if (metode === 'Kartu Kredit') adminFeePercent = 0.025; // 2.5%
+
+            const jumlahNumber = parseFloat(jumlahVal);
+            const adminFee = Math.round(jumlahNumber * adminFeePercent);
+            const totalPembayaran = jumlahNumber + adminFee;
+
+            // Render Tampilan Berhasil & Detail Pembayaran mirip seperti gambar referensi[span_4](start_span)[span_4](end_span)
+            detailContent.innerHTML = `
+                <div class="space-y-5 animate-fade-in">
+                    <!-- Alert Berhasil -->
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
+                        <div class="bg-emerald-600 text-white rounded-full p-1 mt-0.5 shrink-0 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-emerald-800 text-base">Pembayaran Berhasil Diproses!</h3>
+                            <p class="text-xs text-emerald-700/80 mt-0.5">Ini simulasi tampilan, bukan transaksi sungguhan.</p>
+                        </div>
+                    </div>
+
+                    <!-- Rincian Data -->
+                    <div class="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 text-sm">
+                        <div class="flex justify-between items-center p-3 bg-slate-50/50">
+                            <span class="text-slate-500">Metode Pembayaran</span>
+                            <span class="font-bold text-slate-900">${metode}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white">
+                            <span class="text-slate-500">Nomor Tujuan</span>
+                            <span class="font-bold text-slate-900">${noRek}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-50/50">
+                            <span class="text-slate-500">Keterangan</span>
+                            <span class="font-bold text-slate-900">${keteranganVal}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white">
+                            <span class="text-slate-500">Jumlah Pembayaran</span>
+                            <span class="font-bold text-slate-900">${formatRupiah(jumlahNumber)}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-50/50">
+                            <span class="text-slate-500">Biaya Admin (${(adminFeePercent * 100).toFixed(adminFeePercent === 0.007 ? 1 : 0)}%)</span>
+                            <span class="font-bold text-slate-900">${formatRupiah(adminFee)}</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Keseluruhan -->
+                    <div class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-4 space-y-1">
+                        <span class="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Total Pembayaran</span>
+                        <div class="text-xl font-extrabold text-emerald-800">${formatRupiah(totalPembayaran)}</div>
+                    </div>
+                </div>
+            `;
+
+            // Gulir otomatis secara mulus ke bagian detail pembayaran agar langsung terlihat oleh pengguna
+            document.getElementById('detail-card').scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>
